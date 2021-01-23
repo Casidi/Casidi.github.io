@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"casidi.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="近期接觸了一些逆向工程的技術，仔細的了解了 C 語言決定入口點的機制，在此作整理。所謂入口點(Entry Point)指的是程式啟動後第一個被執行指令的位址。對一般的 programmar 而言，程式的入口點就是 main 函式，在 Windows 環境下有可能為WinMain，這都是最基本的常識。然而事實上 main 並不是這個程式第一個被執行的函式。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C 語言入口點解析">
+<meta property="og:url" content="https://casidi.github.io/2016/11/16/c-entry-point/index.html">
+<meta property="og:site_name" content="鬼畜王的窩">
+<meta property="og:description" content="近期接觸了一些逆向工程的技術，仔細的了解了 C 語言決定入口點的機制，在此作整理。所謂入口點(Entry Point)指的是程式啟動後第一個被執行指令的位址。對一般的 programmar 而言，程式的入口點就是 main 函式，在 Windows 環境下有可能為WinMain，這都是最基本的常識。然而事實上 main 並不是這個程式第一個被執行的函式。">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2016-11-16T13:58:00.000Z">
+<meta property="article:modified_time" content="2021-01-23T06:05:37.836Z">
+<meta property="article:author" content="JC Chang">
+<meta property="article:tag" content="C&#x2F;C++">
+<meta property="article:tag" content="C">
+<meta property="article:tag" content="gcc">
+<meta property="article:tag" content="VC">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://casidi.github.io/2016/11/16/c-entry-point/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-TW'
+  };
+</script>
+
+  <title>C 語言入口點解析 | 鬼畜王的窩</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-172672519-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-172672519-1');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">鬼畜王的窩</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">隨筆紀錄</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>關於</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://casidi.github.io/2016/11/16/c-entry-point/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="JC Chang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="鬼畜王的窩">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          C 語言入口點解析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">發表於</span>
+
+              <time title="創建時間：2016-11-16 21:58:00" itemprop="dateCreated datePublished" datetime="2016-11-16T21:58:00+08:00">2016-11-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新於</span>
+                <time title="修改時間：2021-01-23 14:05:37" itemprop="dateModified" datetime="2021-01-23T14:05:37+08:00">2021-01-23</time>
+              </span>
+
+          
+            <span class="post-meta-item" title="閱讀次數">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-users"></i>
+              </span>
+              <span class="post-meta-item-text">閱讀次數：</span>
+              <span class="firestore-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2016/11/16/c-entry-point/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/11/16/c-entry-point/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>近期接觸了一些逆向工程的技術，仔細的了解了 C 語言決定入口點的機制，在此作整理。所謂入口點(Entry Point)指的是程式啟動後第一個被執行指令的位址。對一般的 programmar 而言，程式的入口點就是 <code>main</code> 函式，在 Windows 環境下有可能為<code>WinMain</code>，這都是最基本的常識。然而事實上 <code>main</code> 並不是這個程式第一個被執行的函式。</p>
+<a id="more"></a>
+<p>這時我們需要先對入口點做更嚴謹的定義。首先，一個程式是如何啟動的？方法有很多，常見的有：在檔案總管中雙按執行檔、在命令提示字元中輸入程式名稱、在程式中呼叫 <code>CreateProcess</code> 啟動另一個程式，其實這三種方法最終都是透過呼叫 <code>CreateProcess</code> 來啟動程式，而 <code>CreateProcess</code> 中，系統會先將環境建立好，之後在跳轉到程式的入口點。</p>
+<p>入口點要如何得知？入口點其實就紀錄在執行檔中。那執行檔的入口點是如何決定? 這就是連結器(Linker)的工作了。以下我就針對兩種最常見的 linker 進行說明。</p>
+<p>第一個例子為 Visual C++ 的 linker，預設會根據 <code>/SUBSYSTEM</code> 這個 flag 來選擇進入點，若指定了 <code>/SUBSYSTEM:CONSOLE</code>，linker會選擇 <code>mainCRTStartup</code> 作為進入點，若指定了 <code>/SUBSYSTEM:WINDOWS</code>，linker會選擇 <code>WinMainCRTStartup</code> 作為進入點。若要使用非預設的入口點，則需指定 <code>/ENTRY</code> 這個 flag。</p>
+<p>由此可知 VC 的 linker 選擇進入點的順位如下:</p>
+<ol>
+<li><code>/ENTRY</code> 指定的函式</li>
+<li><code>/SUBSYSTEM</code> 的值</li>
+<li>若沒有指定 <code>/SUBSYSTEM</code>，則看 <code>main</code> 與 <code>WinMain</code> 使否有定義，若<code>main</code>有定義則使用 <code>mainCRTStartup</code>，若 <code>WinMain</code> 有定義則使用 <code>WinMainCRTStartup</code>。</li>
+</ol>
+<p>第二個例子為 gcc 的 linker，這邊直接列選擇入口點的順位:</p>
+<ol>
+<li><code>-e</code> 選項所指定的位址</li>
+<li>linker script 中 <code>ENTRY()</code> 所指定的位址</li>
+<li>若 <code>start</code> 符號有定義，則使用<code>start</code>所指定的位址</li>
+<li>若有 .text 這個 section，則指定 <code>.text</code> 區段第一個byte的位址為入口點</li>
+<li>使用位址 0 作為入口點</li>
+</ol>
+<p>以上兩個例子參考了這兩個說明文件:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/cpp/build/reference/entry-entry-point-symbol?view=vs-2019">/ENTRY reference</a></li>
+<li><a target="_blank" rel="noopener" href="https://ftp.gnu.org/old-gnu/Manuals/ld-2.9.1/html_node/ld_24.html">The entry point in gcc</a></li>
+</ul>
+<p>那實際上該如何驗證? gcc 為了支援多個平台因此原始碼比較複雜，因此這邊選擇對 Visual C++ 的 CRT 原始碼做研究。</p>
+<p>VC 的CRT的原始碼就放在VC的安裝資料夾中，我的電腦上的路徑為:<code>C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\crt\src</code></p>
+<p>其中我們感興趣的程式碼都位於 vcruntime這個資料夾中，其中有三個檔案為我們的目標:</p>
+<ul>
+<li>exe_common.inl =&gt;實作初始化 C runtime的程式碼</li>
+<li>vcstartup_internal.h =&gt; <code>mainCRTStartup</code>與<code>WinMainCRTStartup</code> 的宣告</li>
+<li>exe_main.cpp =&gt; <code>mainCRTStartup</code>的實作(定義)</li>
+<li>exe_winmain.cpp =&gt; <code>WinMainStartup</code> 的實作(定義)</li>
+</ul>
+<p>exe_main.cpp 與 exe_winmain.cpp 都非常簡短，直接列出來:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//exe_main.cpp</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _SCRT_STARTUP_MAIN <span class="comment">//使exe_common.inl能夠正確的呼叫到 main</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;exe_common.inl&quot;</span> <span class="comment">//真正的實作</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="function"><span class="keyword">int</span> <span class="title">mainCRTStartup</span><span class="params">()</span> <span class="comment">//入口點!!!</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> __scrt_common_main(); <span class="comment">//真正的實作</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//exe_winmain.cpp</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _SCRT_STARTUP_WINMAIN <span class="comment">//使exe_common.inl能夠正確的呼叫到 WinMain</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;exe_common.inl&quot;</span> <span class="comment">//真正的實作</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="function"><span class="keyword">int</span> <span class="title">WinMainCRTStartup</span><span class="params">()</span> <span class="comment">//入口點!!!</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> __scrt_common_main(); <span class="comment">//真正的實作</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>exe_common.inl 中實作了CRT的初始化，其實不管入口點為何，CRT初始化都是使用同一段程式碼，差別只在最後呼叫的是 main 還是 WinMain 而已。CRT的初始化又是另一個題目了，往後有機會再研究。</p>
+<p>研究CRT原始碼讓人相當過癮，以往使用 OllyDbg 時，往往對main之前的那一大段程式碼不知其所以然，現在配合原始碼一對照，可以清清楚楚地知道程式每一步在做的是什麼，往後也許會寫一篇關於CRT啟動程式碼的文章。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/c-cpp/" rel="tag"># C/C++</a>
+              <a href="/tags/C/" rel="tag"># C</a>
+              <a href="/tags/gcc/" rel="tag"># gcc</a>
+              <a href="/tags/VC/" rel="tag"># VC</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/07/29/siglusengine-cracking/" rel="prev" title="SiglusEngine 地區限制破解">
+      <i class="fa fa-chevron-left"></i> SiglusEngine 地區限制破解
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/04/25/yuno-letter-from-koudai/" rel="next" title="YU-NO 有馬広大からの手紙 中文翻譯">
+      YU-NO 有馬広大からの手紙 中文翻譯 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">JC Chang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fas fa-frog"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JC Chang</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 強力驅動
+  </div>
+
+        
+
+
+
+
+  <script src="https://www.gstatic.com/firebasejs/6.3.3/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.3.3/firebase-firestore.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey   : 'AIzaSyAjRvprIfbrpFbtmWcepo8MJoQIP01Z5Xo',
+      projectId: 'jc-hexo-blog'
+    });
+
+    function getCount(doc, increaseCount) {
+      // IncreaseCount will be false when not in article page
+      return doc.get().then(d => {
+        var count = 0;
+        if (!d.exists) { // Has no data, initialize count
+          if (increaseCount) {
+            doc.set({
+              count: 1
+            });
+            count = 1;
+          }
+        } else { // Has data
+          count = d.data().count;
+          if (increaseCount) {
+            // If first view this article
+            doc.set({ // Increase count
+              count: count + 1
+            });
+            count++;
+          }
+        }
+
+        return count;
+      });
+    }
+
+    function appendCountTo(el) {
+      return count => {
+        el.innerText = count;
+      }
+    }
+  </script>
+  <script>
+    (function() {
+      var db = firebase.firestore();
+      var articles = db.collection('articles');
+
+      if (CONFIG.page.isPost) { // Is article page
+        var title = document.querySelector('.post-title').innerText.trim();
+        var doc = articles.doc(title);
+        var increaseCount = CONFIG.hostname === location.hostname;
+        if (localStorage.getItem(title)) {
+          increaseCount = false;
+        } else {
+          // Mark as visited
+          localStorage.setItem(title, true);
+        }
+        getCount(doc, increaseCount).then(appendCountTo(document.querySelector('.firestore-visitors-count')));
+      } else if (CONFIG.page.isHome) { // Is index page
+        var promises = [...document.querySelectorAll('.post-title')].map(element => {
+          var title = element.innerText.trim();
+          var doc = articles.doc(title);
+          return getCount(doc);
+        });
+        Promise.all(promises).then(counts => {
+          var metas = document.querySelectorAll('.firestore-visitors-count');
+          counts.forEach((val, idx) => {
+            appendCountTo(metas[idx])(val);
+          });
+        });
+      }
+    })();
+  </script>
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://jcblog-2.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://casidi.github.io/2016/11/16/c-entry-point/";
+    this.page.identifier = "2016/11/16/c-entry-point/";
+    this.page.title = "C 語言入口點解析";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://jcblog-2.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+</body>
+</html>

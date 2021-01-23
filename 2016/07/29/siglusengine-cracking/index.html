@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"casidi.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="採用這個引擎的比較有名的就是key跟SAGA PLANETS這兩家公司了。這次以SAGA PLANET做的一個小遊戲為分析對象，遊戲可以免費下載：【はつゆきパズル☆神経衰弱☆】。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SiglusEngine 地區限制破解">
+<meta property="og:url" content="https://casidi.github.io/2016/07/29/siglusengine-cracking/index.html">
+<meta property="og:site_name" content="鬼畜王的窩">
+<meta property="og:description" content="採用這個引擎的比較有名的就是key跟SAGA PLANETS這兩家公司了。這次以SAGA PLANET做的一個小遊戲為分析對象，遊戲可以免費下載：【はつゆきパズル☆神経衰弱☆】。">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://i.imgur.com/J8sekIm.jpg">
+<meta property="og:image" content="https://i.imgur.com/xw1DUGs.jpg">
+<meta property="og:image" content="https://i.imgur.com/f9DyedB.jpg">
+<meta property="og:image" content="https://i.imgur.com/ZSyrbLy.jpg">
+<meta property="article:published_time" content="2016-07-29T14:57:00.000Z">
+<meta property="article:modified_time" content="2021-01-23T06:05:37.845Z">
+<meta property="article:author" content="JC Chang">
+<meta property="article:tag" content="C">
+<meta property="article:tag" content="asm">
+<meta property="article:tag" content="組合語言">
+<meta property="article:tag" content="破解">
+<meta property="article:tag" content="ollydbg">
+<meta property="article:tag" content="galgame">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.imgur.com/J8sekIm.jpg">
+
+<link rel="canonical" href="https://casidi.github.io/2016/07/29/siglusengine-cracking/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-TW'
+  };
+</script>
+
+  <title>SiglusEngine 地區限制破解 | 鬼畜王的窩</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-172672519-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-172672519-1');
+      }
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">鬼畜王的窩</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">隨筆紀錄</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>關於</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://casidi.github.io/2016/07/29/siglusengine-cracking/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="JC Chang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="鬼畜王的窩">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          SiglusEngine 地區限制破解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">發表於</span>
+
+              <time title="創建時間：2016-07-29 22:57:00" itemprop="dateCreated datePublished" datetime="2016-07-29T22:57:00+08:00">2016-07-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新於</span>
+                <time title="修改時間：2021-01-23 14:05:37" itemprop="dateModified" datetime="2021-01-23T14:05:37+08:00">2021-01-23</time>
+              </span>
+
+          
+            <span class="post-meta-item" title="閱讀次數">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-users"></i>
+              </span>
+              <span class="post-meta-item-text">閱讀次數：</span>
+              <span class="firestore-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2016/07/29/siglusengine-cracking/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/07/29/siglusengine-cracking/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="https://i.imgur.com/J8sekIm.jpg" alt=""><br>採用這個引擎的比較有名的就是key跟SAGA PLANETS這兩家公司了。這次以SAGA PLANET做的一個小遊戲為分析對象，遊戲可以免費下載：<a target="_blank" rel="noopener" href="http://sagaplanets.product.co.jp/works/hatuyuki/download.htm">【はつゆきパズル☆神経衰弱☆】</a>。</p>
+<a id="more"></a>
+<p>下載下來的是一個壓縮檔，檔名為 <code>hatsukipuzzle01.zip</code>，直接解壓縮會得到一個資料夾，名字為：<strong>はつゆきパズル</strong>。其實遊戲必要的只有 <code>はつゆきパズル\StartData\GameData</code> 這個資料夾，直接把<code>GameData</code>資料夾搬到隨便一個地方，執行<code>SiglusEngine.exe</code>即可啟動遊戲。可惜事情沒這麼簡單，直接執行 <code>SiglusEngine.exe</code>，會出現這個視窗：<br><img src="https://i.imgur.com/xw1DUGs.jpg" alt=""></p>
+<p>那用轉區工具啟動如何？經過測試，Locale Emulator 轉日區一樣無效，都會彈出上面那個視窗。於是我使用 OllyDbg 啟動遊戲進行調試，思路很簡單，就是直接對<code>MessageBox</code>函式下斷，然後重新啟動程式，按 F9 繼續執行就會停在這裡：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">0045DCCF  |.  8D4424 50      LEA EAX,[ESP+50]</span><br><span class="line">0045DCD3  |&gt;  6A 30          PUSH 30</span><br><span class="line">0045DCD5  |.  51             PUSH ECX</span><br><span class="line">0045DCD6  |.  50             PUSH EAX</span><br><span class="line">0045DCD7  |.  A1 BCF3B304    MOV EAX,DWORD PTR DS:[4B3F3BC]</span><br><span class="line">0045DCDC  |.  50             PUSH EAX</span><br><span class="line">0045DCDD  |.  FF15 B0D47700  CALL DWORD PTR DS:[&lt;&amp;USER32.MessageBoxW&gt;] ;彈出錯誤訊息</span><br></pre></td></tr></table></figure>
+<p>接著我就往上查找，看看有沒有繞過這一段指令的跳轉，很幸運的只有找到一處：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0045DC5A  |.  E8 81F9FFFF    CALL 0045D5E0</span><br><span class="line">0045DC5F  |.  84C0           TEST AL,AL</span><br><span class="line">0045DC61  |.  0F85 A9000000  JNZ 0045DD10 ;關鍵跳轉</span><br></pre></td></tr></table></figure>
+<p>這裡邏輯很簡單，只要<code>call 0x0045D5E0</code>返回值不為零就跳走，若為零則繼續執行並印出錯誤訊息。既然這樣修改的方式也很簡單，直接把 <code>JNZ</code> 改為 <code>JMP</code> 即可，這樣不管返回值為何都會跳走。於是我們修改指令，並把修改保存到執行檔，之後再直接啟動程式，結果如下：<br><img src="https://i.imgur.com/f9DyedB.jpg" alt=""></p>
+<p>然而還是無法啟動遊戲，不過仔細一看錯誤訊息跟上次並不相同，於是我們再度使用 OllyDbg 進行調試。這次我們先在上次找到的關鍵跳轉下斷，之後一步一步跟蹤看看問題出在哪裡。依照經驗，通常這些檢查都會在鄰近的地方。剛才的關鍵跳轉(已修改)：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">0045DC5A  |.  E8 81F9FFFF  CALL 0045D5E0</span><br><span class="line">0045DC5F      84C0         TEST AL,AL</span><br><span class="line">0045DC61      E9 AA000000  JMP 0045DD10 ;第一個關鍵跳轉</span><br><span class="line">0045DC66      90           NOP</span><br></pre></td></tr></table></figure>
+<p>跳轉目的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0045DD10  |&gt;  E8 8BFCFFFF CALL 0045D9A0 ;跳到這裡，第一個關鍵跳轉目的</span><br><span class="line">0045DD15  |.  84C0           TEST AL,AL</span><br><span class="line">0045DD17      0F85 E9000000  JNZ 0045DE06 ;第二個關鍵跳轉</span><br></pre></td></tr></table></figure>
+<p>看起來很眼熟，我們先不要修改繼續按 F8 跟蹤，結果程式在這裡停了下來，跳出了圖二的錯誤訊息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">0045DD9B  |.  6A 30        PUSH 30  ; &#x2F;Arg1 &#x3D; 30</span><br><span class="line">0045DD9D  |.  8BC6         MOV EAX,ESI     ;|</span><br><span class="line">0045DD9F  |.  8D4C24 34    LEA ECX,[ESP+34];|</span><br><span class="line">0045DDA3  |.  E8 78FA1000  CALL 0056D820 ; \SiglusEngine.0056D820 ;這裡!!</span><br></pre></td></tr></table></figure>
+<p>也就是說 <code>SiglusEngine.0056D820</code> 裡面呼叫了<code>MessageBox</code>。我們回到剛剛的 <code>JNZ</code> 發現他剛好有可能跳過呼叫 <code>SiglusEngine.0056D820</code> 的這段程式碼，也就是說這個 <code>JNZ</code> 也是一個關鍵跳轉。</p>
+<p>我們同樣改為 <code>JMP</code>，然後保存修改，直接執行程式，又出現一個：</p>
+<p><img src="https://i.imgur.com/ZSyrbLy.jpg" alt=""></p>
+<p>一樣，我們先對圖二的那個關鍵跳轉下斷，然後按F8跟蹤，馬上又找到一個地方：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0045DE06  |&gt;  E8 E5FCFFFF     CALL 0045DAF0 ;第二個關鍵跳轉目的</span><br><span class="line">0045DE0B  |.  84C0            TEST AL,AL</span><br><span class="line">0045DE0D  |.  0F85 DE000000   JNZ 0045DEF1 ;第三個關鍵跳轉</span><br></pre></td></tr></table></figure>
+<p>修改方式一模一樣，這裡不再贅述。為防萬一，我繼續往下找是否還有類似的地方，結果在第三個關鍵跳轉後，這個函式很快的就返回了，看來應該是沒有類似的檢查了。保存修改後直接執行，即可看到第一張圖的遊戲畫面。</p>
+<p>整理一下結果可以發現整個地區檢查的邏輯是這樣(C虛擬碼)：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">check_location</span><span class="params">()</span> </span>&#123;</span><br><span class="line"> <span class="keyword">if</span>(!is_japanese_system()) &#123;</span><br><span class="line">  ...</span><br><span class="line">  MessageBox();</span><br><span class="line">  ...</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="keyword">if</span>(!is_japanese_system_language()) &#123;</span><br><span class="line">  ...</span><br><span class="line">  MessageBox();</span><br><span class="line">  ...</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="keyword">if</span>(!is_japan_time_zone()) &#123;</span><br><span class="line">  ...</span><br><span class="line">  MessageBox();</span><br><span class="line">  ...</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>從這裡可以看出來 SiglusEngine 時做了三種檢查地區的方法，之後再來一一分析好了，目標就是把這三種方法寫成像這樣的函式：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">is_japanese_system</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">is_japanese_system_language</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">is_japan_time_zone</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+<p>以上~</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C</a>
+              <a href="/tags/asm/" rel="tag"># asm</a>
+              <a href="/tags/%E7%B5%84%E5%90%88%E8%AA%9E%E8%A8%80/" rel="tag"># 組合語言</a>
+              <a href="/tags/%E7%A0%B4%E8%A7%A3/" rel="tag"># 破解</a>
+              <a href="/tags/ollydbg/" rel="tag"># ollydbg</a>
+              <a href="/tags/galgame/" rel="tag"># galgame</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2016/11/16/c-entry-point/" rel="next" title="C 語言入口點解析">
+      C 語言入口點解析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">JC Chang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fas fa-frog"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JC Chang</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 強力驅動
+  </div>
+
+        
+
+
+
+
+  <script src="https://www.gstatic.com/firebasejs/6.3.3/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.3.3/firebase-firestore.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey   : 'AIzaSyAjRvprIfbrpFbtmWcepo8MJoQIP01Z5Xo',
+      projectId: 'jc-hexo-blog'
+    });
+
+    function getCount(doc, increaseCount) {
+      // IncreaseCount will be false when not in article page
+      return doc.get().then(d => {
+        var count = 0;
+        if (!d.exists) { // Has no data, initialize count
+          if (increaseCount) {
+            doc.set({
+              count: 1
+            });
+            count = 1;
+          }
+        } else { // Has data
+          count = d.data().count;
+          if (increaseCount) {
+            // If first view this article
+            doc.set({ // Increase count
+              count: count + 1
+            });
+            count++;
+          }
+        }
+
+        return count;
+      });
+    }
+
+    function appendCountTo(el) {
+      return count => {
+        el.innerText = count;
+      }
+    }
+  </script>
+  <script>
+    (function() {
+      var db = firebase.firestore();
+      var articles = db.collection('articles');
+
+      if (CONFIG.page.isPost) { // Is article page
+        var title = document.querySelector('.post-title').innerText.trim();
+        var doc = articles.doc(title);
+        var increaseCount = CONFIG.hostname === location.hostname;
+        if (localStorage.getItem(title)) {
+          increaseCount = false;
+        } else {
+          // Mark as visited
+          localStorage.setItem(title, true);
+        }
+        getCount(doc, increaseCount).then(appendCountTo(document.querySelector('.firestore-visitors-count')));
+      } else if (CONFIG.page.isHome) { // Is index page
+        var promises = [...document.querySelectorAll('.post-title')].map(element => {
+          var title = element.innerText.trim();
+          var doc = articles.doc(title);
+          return getCount(doc);
+        });
+        Promise.all(promises).then(counts => {
+          var metas = document.querySelectorAll('.firestore-visitors-count');
+          counts.forEach((val, idx) => {
+            appendCountTo(metas[idx])(val);
+          });
+        });
+      }
+    })();
+  </script>
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://jcblog-2.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://casidi.github.io/2016/07/29/siglusengine-cracking/";
+    this.page.identifier = "2016/07/29/siglusengine-cracking/";
+    this.page.title = "SiglusEngine 地區限制破解";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://jcblog-2.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+</body>
+</html>
