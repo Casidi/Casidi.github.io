@@ -2,16 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://casidi.github.io/2021/01/23/2020-summary/</loc>
+    <loc>https://casidi.github.io/2021/02/20/tsaotun-house-network/</loc>
     
-    <lastmod>2021-01-23T08:21:03.856Z</lastmod>
+    <lastmod>2021-02-20T06:26:51.637Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://casidi.github.io/about/index-1.html</loc>
+    <loc>https://casidi.github.io/2021/01/23/2020-summary/</loc>
     
-    <lastmod>2021-01-23T06:05:37.853Z</lastmod>
+    <lastmod>2021-01-23T08:21:03.856Z</lastmod>
     
   </url>
   
@@ -23,7 +23,7 @@
   </url>
   
   <url>
-    <loc>https://casidi.github.io/tags/index.html</loc>
+    <loc>https://casidi.github.io/about/index-1.html</loc>
     
     <lastmod>2021-01-23T06:05:37.853Z</lastmod>
     
@@ -37,7 +37,21 @@
   </url>
   
   <url>
+    <loc>https://casidi.github.io/tags/index.html</loc>
+    
+    <lastmod>2021-01-23T06:05:37.853Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://casidi.github.io/2020/08/25/latex-diff-tools/</loc>
+    
+    <lastmod>2021-01-23T06:05:37.845Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://casidi.github.io/2020/07/14/latex-toolchain/</loc>
     
     <lastmod>2021-01-23T06:05:37.845Z</lastmod>
     
@@ -86,23 +100,9 @@
   </url>
   
   <url>
-    <loc>https://casidi.github.io/2020/07/14/latex-toolchain/</loc>
-    
-    <lastmod>2021-01-23T06:05:37.845Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://casidi.github.io/2020/12/13/journal-20201213/</loc>
     
     <lastmod>2021-01-23T06:05:37.844Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://casidi.github.io/2016/11/16/c-entry-point/</loc>
-    
-    <lastmod>2021-01-23T06:05:37.836Z</lastmod>
     
   </url>
   
@@ -115,6 +115,13 @@
   
   <url>
     <loc>https://casidi.github.io/2019/06/18/advanced-unix-2019/</loc>
+    
+    <lastmod>2021-01-23T06:05:37.836Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://casidi.github.io/2016/11/16/c-entry-point/</loc>
     
     <lastmod>2021-01-23T06:05:37.836Z</lastmod>
     
